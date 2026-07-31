@@ -50,6 +50,15 @@ test("hand slots show left/right preview without revealing the CPU hand", async 
   await expect(page.getByRole("button", { name: /指スマ！/ })).toBeVisible();
 });
 
+test("hand art is built from a compact fist and folded fingers", async ({ page }) => {
+  await page.getByRole("button", { name: /対戦をはじめる/ }).click();
+  await page.getByRole("button", { name: /クイック対戦/ }).click();
+  await page.getByRole("button", { name: /この相手と対戦/ }).click();
+  await expect(page.locator(".hand-unit__fist")).toHaveCount(4);
+  await expect(page.locator(".hand-unit__folded-fingers")).toHaveCount(4);
+  await expect(page.locator(".hand-unit__palm")).toHaveCount(0);
+});
+
 test("arena ladder starts the next battle", async ({ page }) => {
   await page.getByRole("button", { name: /対戦をはじめる/ }).click();
   await page.getByRole("button", { name: /アリーナモード/ }).click();

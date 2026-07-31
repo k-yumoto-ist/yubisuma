@@ -26,16 +26,19 @@ interface HandGraphicProps {
   onThumbToggle?: (thumbs: number, pattern: ThumbPattern) => void;
 }
 
-const thumbUpPath = "M43 116C29 113 18 104 13 90 8 76 13 64 24 60c8-3 16 1 20 9l7 14 3-45c1-10 8-16 17-15 9 1 14 9 13 19l-4 48c-2 18-11 27-30 26Z";
-const thumbDownPath = "M43 116c-16 2-29-3-36-14-6-10-3-21 7-27 8-5 17-2 23 5l16 18c6 7 3 15-10 18Z";
+const fistPath = "M48 151C39 144 34 132 34 117L35 82C35 72 40 64 49 61 56 59 62 63 65 70 67 62 73 58 80 58 88 58 94 63 95 71 98 64 104 61 111 63 118 65 122 71 122 78 127 73 134 75 138 80 142 86 141 94 138 102L134 129C131 147 119 158 101 162L67 162C59 160 53 157 48 151Z";
+const foldedFingersPath = "M43 91C54 98 66 100 77 96M75 95C88 101 101 101 113 95M54 119C68 127 87 127 103 119M57 143C71 149 87 149 101 143";
+const thumbUpPath = "M55 113C43 113 33 106 28 96 23 86 27 77 36 73 44 70 52 74 57 81L64 91 62 50C62 39 69 31 79 31 89 31 96 39 95 49L91 92C89 109 77 117 55 113Z";
+const thumbDownPath = "M55 116C44 118 34 114 28 107 22 99 24 91 32 86 39 82 46 85 52 91L68 106C74 112 67 116 55 116Z";
 
 function HandUnit({ mirror, slot, state }: { mirror: boolean; slot: ThumbSlotView; state: HandState }) {
   const raised = slot.raised && slot.state !== "unavailable";
   return (
-    <svg className={`hand-unit ${mirror ? "hand-unit--mirror" : ""} hand-unit--${slot.state} ${raised ? "is-raised" : ""}`} viewBox="0 0 140 180" role="img" aria-hidden="true">
+    <svg className={`hand-unit ${mirror ? "hand-unit--mirror" : ""} hand-unit--${slot.state} ${raised ? "is-raised" : ""}`} viewBox="0 0 160 180" role="img" aria-hidden="true">
       <path className="hand-unit__shadow" d="M21 160c9-17 24-28 45-31 25-4 47 9 56 31H21Z" />
-      <path className="hand-unit__palm" d="M41 151c-5-15-7-31-5-45l2-31c1-7 7-11 13-9 5 2 7 6 7 11l-1 17 4-54c1-7 7-11 13-9 5 2 7 6 7 11l-1 51 4-43c1-7 7-10 13-8 5 2 7 6 7 11l-3 46 4-30c1-6 7-9 12-7 5 2 7 6 6 12l-5 52c-2 22-14 36-35 42l-26-1c-7-5-11-11-12-17Z" />
-      <path className="hand-unit__line" d="M58 103c11 8 23 10 35 5M56 124c15 9 29 10 42 3M47 143c15 7 29 8 42 3" />
+      <path className="hand-unit__wrist" d="M58 145C69 151 91 153 103 146L108 178H53Z" />
+      <path className="hand-unit__fist" d={fistPath} />
+      <path className="hand-unit__folded-fingers" d={foldedFingersPath} />
       <g className="hand-unit__thumb-group">
         <path className={`hand-unit__thumb hand-unit__thumb--${raised ? "up" : "down"} hand-unit__thumb--${slot.state} hand-unit__thumb--${state}`} d={raised ? thumbUpPath : thumbDownPath} />
         {slot.state === "used" && (
@@ -46,7 +49,7 @@ function HandUnit({ mirror, slot, state }: { mirror: boolean; slot: ThumbSlotVie
         )}
         {slot.state === "unavailable" && <path className="hand-unit__unavailable-mark" d="m22 82 23 20m0-20-23 20" />}
       </g>
-      <path className="hand-unit__highlight" d="M75 31c0-3 2-5 5-5 3 0 5 2 5 5l-3 49c0 3-2 5-5 5-3 0-5-2-5-5l3-49Z" />
+      <path className="hand-unit__highlight" d="M52 75C56 68 64 66 71 70c3 2 3 5 0 7-5 4-12 5-17 2-4-1-5-3-2-4Z" />
     </svg>
   );
 }

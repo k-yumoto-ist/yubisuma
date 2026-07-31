@@ -25,4 +25,12 @@ describe("hand visual state", () => {
     const bothLost = getThumbSlotViews(patternForCount(2), 0, 2);
     expect(bothLost.map((slot) => slot.state)).toEqual(["used", "used"]);
   });
+
+  it("keeps the surviving left or right thumb explicit after a loss", () => {
+    const leftRemaining = getThumbSlotViews(patternForCount(2), 1, 1, 1);
+    expect(leftRemaining.map((slot) => slot.state)).toEqual(["up", "used"]);
+
+    const rightRemaining = getThumbSlotViews(patternForCount(0), 1, 1, 0);
+    expect(rightRemaining.map((slot) => slot.state)).toEqual(["used", "down"]);
+  });
 });
