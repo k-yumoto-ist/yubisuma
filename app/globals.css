@@ -355,18 +355,18 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .hand-unit { width: 100%; height: auto; display: block; overflow: visible; transform-origin: 50% 85%; }
 .hand-unit--mirror { transform: scaleX(-1); }
 .hand-unit__shadow { fill: rgba(0,0,0,.25); }
-.hand-unit__wrist, .hand-unit__fist { fill: #e7b28a; stroke: #3b2740; stroke-width: 2.5; stroke-linejoin: round; }
-.hand-unit__folded-fingers { fill: none; stroke: rgba(104,55,54,.48); stroke-width: 2; stroke-linecap: round; }
-.hand-unit__thumb { stroke: #3b2740; stroke-width: 2.5; stroke-linejoin: round; }
+.hand-unit__fist { fill: #e7b28a; stroke: #3b2740; stroke-width: 3.5; stroke-linejoin: round; }
+.hand-unit__folded-fingers { fill: none; stroke: rgba(104,55,54,.52); stroke-width: 2.2; stroke-linecap: round; }
+.hand-unit__thumb { stroke: #3b2740; stroke-width: 3.5; stroke-linejoin: round; }
 .hand-unit__thumb--up { fill: #f7c18f; }
 .hand-unit__thumb--down { fill: #c98c73; }
 .hand-unit__thumb--used { opacity: .58; }
 .hand-unit__thumb--unavailable { opacity: .22; }
-.hand-unit__highlight { fill: rgba(255,255,255,.26); }
+.hand-unit__highlight { fill: none; stroke: rgba(255,255,255,.32); stroke-width: 3; stroke-linecap: round; }
 .hand-unit__bandage { fill: #ffe08a; stroke: #3b2740; stroke-width: 2; stroke-linejoin: round; }
 .hand-unit__bandage-line { fill: none; stroke: #9a694d; stroke-width: 1.8; stroke-linecap: round; }
 .hand-unit__unavailable-mark { fill: none; stroke: rgba(59,39,64,.5); stroke-width: 3; stroke-linecap: round; }
-.hand-graphic--p2 .hand-unit__wrist, .hand-graphic--p2 .hand-unit__fist { fill: color-mix(in srgb, var(--character-primary) 24%, #e7b28a); }
+.hand-graphic--p2 .hand-unit__fist { fill: color-mix(in srgb, var(--character-primary) 24%, #e7b28a); }
 .hand-graphic--p2 .hand-unit__thumb--up { fill: color-mix(in srgb, var(--character-primary) 26%, #f7c18f); }
 .hand-graphic--selected .hand-slot--up { transform: translateY(-5px); }
 .hand-graphic--selected .hand-slot--up .hand-hit-area { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--character-accent) 55%, transparent)); }
@@ -577,7 +577,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   display: grid;
   grid-template-rows: 40px minmax(0, 1fr) 176px;
   gap: 0;
-  overflow: hidden;
+  /* `hidden` still allows focus-induced programmatic scrolling on mobile.
+     `clip` keeps the fixed duel board anchored while tapping the outer thumb. */
+  overflow: clip;
   position: relative;
   z-index: 1;
 }
