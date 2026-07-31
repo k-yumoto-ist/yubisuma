@@ -24,7 +24,7 @@
 - PWA manifest + service worker（基本画面をキャッシュ）
 - Vitestによるルール・CPU・状態機械・保存の単体テスト
 - Playwrightによる主要画面・対戦フローE2Eテスト
-- 外部バックエンド不要、VercelのNode/Next.jsデプロイに対応
+- 外部バックエンド不要、VercelのNode/Next.jsデプロイとGitHub Pagesの静的公開に対応
 
 ## セットアップ
 
@@ -59,6 +59,14 @@ VercelでこのディレクトリをNext.jsプロジェクトとして読み込�
 ```bash
 npx vercel
 ```
+
+## GitHub Pagesへのデプロイ
+
+GitHub ActionsでNext.jsの静的出力を生成し、GitHub Pagesへ自動デプロイします。公開URLは次のとおりです。
+
+`https://k-yumoto-ist.github.io/yubisuma/`
+
+`.github/workflows/deploy-pages.yml` は `main` または公開用ブランチへのpushで実行されます。GitHubリポジトリの Settings → Pages → Build and deployment → Source は `GitHub Actions` に設定してください。GitHub Pagesではリポジトリ名のサブパス(`/yubisuma`)を使うため、Actionsのビルド時だけ `basePath` とPWAの参照先を切り替えています。ローカル開発時のURLは従来どおり `http://localhost:3000` です。
 
 ## ディレクトリ構成
 

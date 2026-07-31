@@ -18,6 +18,7 @@ type Screen = "boot" | "title" | "modeSelect" | "characterSelect" | "arena" | "n
 type Presentation = "idle" | "declare" | "count1" | "count2" | "reveal" | "success" | "miss" | "victory" | "defeat";
 
 const speedValues: Record<GameSettings["speed"], number> = { relaxed: 1.25, normal: 1, turbo: 0.68 };
+const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export default function HomePage() {
   const [screen, setScreen] = useState<Screen>("boot");
@@ -92,7 +93,9 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.register(`${publicBasePath}/sw.js`).catch(() => undefined);
+    }
   }, []);
 
   useEffect(() => {
