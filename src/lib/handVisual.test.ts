@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countRaisedThumbs, getThumbSlotViews, patternForCount, patternLabel, toggleThumbPattern } from "./handVisual";
+import { countRaisedThumbs, createThumbPairState, getThumbSlotViews, patternForCount, patternForCountWithAvailability, patternLabel, removeThumb, toggleThumbPattern } from "./handVisual";
 
 describe("hand visual state", () => {
   it("maps 0, 1, and 2 to explicit left/right patterns", () => {
@@ -9,28 +9,40 @@ describe("hand visual state", () => {
   });
 
   it("supports a right-only selection without changing the game count rules", () => {
-    const rightOnly = toggleThumbPattern(patternForCount(0), "right", 2);
+    const rightOnly = toggleThumbPattern(patternForCount(0), "right", { left: true, right: true });
     expect(rightOnly).toEqual({ left: false, right: true });
     expect(countRaisedThumbs(rightOnly)).toBe(1);
     expect(patternLabel(rightOnly)).toBe("右");
   });
 
-  it("marks unavailable and used thumbs separately", () => {
-    const oneThumbLeft = getThumbSlotViews(patternForCount(0), 1);
-    expect(oneThumbLeft.map((slot) => slot.state)).toEqual(["down", "unavailable"]);
-
-    const oneThumbAfterLoss = getThumbSlotViews(patternForCount(1), 1, 1, 0);
-    expect(oneThumbAfterLoss.map((slot) => slot.state)).toEqual(["used", "down"]);
-
-    const bothLost = getThumbSlotViews(patternForCount(2), 0, 2);
-    expect(bothLost.map((slot) => slot.state)).toEqual(["used", "used"]);
+  it("keeps available, selected, and revealed thumbs as separate state", () => {
+    const pair = createThumbPairState();
+    pair.selectedThumbs = { left: true, right: false };
+    expect(getThumbSlotViews(pair).map((slot) => slot.state)).toEqual(["up", "down"]);
+    expect(getThumbSlotViews({ ...pair, revealedThumbs: { left: false, right: true } }).map((slot) => slot.state)).toEqual(["down", "up"]);
   });
 
-  it("keeps the surviving left or right thumb explicit after a loss", () => {
-    const leftRemaining = getThumbSlotViews(patternForCount(2), 1, 1, 1);
-    expect(leftRemaining.map((slot) => slot.state)).toEqual(["up", "used"]);
+  it("removes one explicit side without making both sides selectable", () => {
+    const loss = removeThumb({ left: true, right: true }, { left: false, right: true });
+    expect(loss.availableThumbs).toEqual({ left: true, right: false });
+    expect(getThumbSlotViews({ ...createThumbPairState(), ...loss }).map((slot) => slot.state)).toEqual(["down", "used"]);
+    expect(toggleThumbPattern({ left: false, right: false }, "right", loss.availableThumbs)).toEqual({ left: false, right: false });
+  });
 
-    const rightRemaining = getThumbSlotViews(patternForCount(0), 1, 1, 0);
-    expect(rightRemaining.map((slot) => slot.state)).toEqual(["used", "down"]);
+  it("maps every legal choice for two available thumbs", () => {
+    const available = { left: true, right: true };
+    expect(patternForCountWithAvailability(0, available)).toEqual({ left: false, right: false });
+    expect(patternForCountWithAvailability(1, available)).toEqual({ left: true, right: false });
+    expect(toggleThumbPattern({ left: false, right: false }, "right", available)).toEqual({ left: false, right: true });
+    expect(patternForCountWithAvailability(2, available)).toEqual({ left: true, right: true });
+  });
+
+  it("only allows the surviving side when one thumb remains", () => {
+    const available = { left: true, right: false };
+    expect(patternForCountWithAvailability(0, available)).toEqual({ left: false, right: false });
+    expect(patternForCountWithAvailability(1, available)).toEqual({ left: true, right: false });
+    expect(patternForCountWithAvailability(2, available)).toEqual({ left: true, right: false });
+    expect(patternLabel({ left: true, right: false })).not.toBe("両方");
+    expect(toggleThumbPattern({ left: false, right: false }, "right", available)).toEqual({ left: false, right: false });
   });
 });

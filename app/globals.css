@@ -352,31 +352,17 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .hand-slot--up .hand-slot__label { color: var(--character-accent); }
 .hand-hit-area { width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 0; display: block; border: 0; border-radius: 22px 22px 9px 9px; background: transparent; line-height: 0; cursor: pointer; }
 .hand-hit-area:disabled { cursor: not-allowed; }
-.hand-unit { width: 100%; height: auto; display: block; overflow: visible; transform-origin: 50% 85%; }
-.hand-unit--mirror { transform: scaleX(-1); }
-.hand-unit__shadow { fill: rgba(0,0,0,.25); }
-.hand-unit__fist { fill: #e7b28a; stroke: #3b2740; stroke-width: 3.5; stroke-linejoin: round; }
-.hand-unit__folded-fingers { fill: none; stroke: rgba(104,55,54,.52); stroke-width: 2.2; stroke-linecap: round; }
-.hand-unit__thumb { stroke: #3b2740; stroke-width: 3.5; stroke-linejoin: round; }
-.hand-unit__thumb--up { fill: #f7c18f; }
-.hand-unit__thumb--down { fill: #c98c73; }
-.hand-unit__thumb--used { opacity: .58; }
-.hand-unit__thumb--unavailable { opacity: .22; }
-.hand-unit__highlight { fill: none; stroke: rgba(255,255,255,.32); stroke-width: 3; stroke-linecap: round; }
-.hand-unit__bandage { fill: #ffe08a; stroke: #3b2740; stroke-width: 2; stroke-linejoin: round; }
-.hand-unit__bandage-line { fill: none; stroke: #9a694d; stroke-width: 1.8; stroke-linecap: round; }
-.hand-unit__unavailable-mark { fill: none; stroke: rgba(59,39,64,.5); stroke-width: 3; stroke-linecap: round; }
-.hand-graphic--p2 .hand-unit__fist { fill: color-mix(in srgb, var(--character-primary) 24%, #e7b28a); }
-.hand-graphic--p2 .hand-unit__thumb--up { fill: color-mix(in srgb, var(--character-primary) 26%, #f7c18f); }
+.hand-unit { width: 100%; height: auto; aspect-ratio: 1 / 1; display: block; object-fit: contain; transform-origin: 50% 85%; user-select: none; }
+.hand-unit--used { opacity: .5; filter: grayscale(.35); }
+.hand-unit--unavailable { opacity: .22; filter: grayscale(.65); }
 .hand-graphic--selected .hand-slot--up { transform: translateY(-5px); }
 .hand-graphic--selected .hand-slot--up .hand-hit-area { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--character-accent) 55%, transparent)); }
-.hand-graphic--selected .hand-slot--up .hand-unit__thumb { stroke: var(--character-accent); stroke-width: 3.5; }
 .hand-graphic--revealing .hand-slot, .hand-graphic--reveal .hand-slot { animation: hand-reveal .44s cubic-bezier(.2,.8,.2,1) both; }
 .hand-graphic--revealing .hand-slot--up, .hand-graphic--selected .hand-slot--up { animation: hand-ready .7s ease-in-out infinite alternate; }
-.hand-graphic--success .hand-slot--up .hand-unit__thumb { animation: thumb-glow .78s ease both; }
+.hand-graphic--success .hand-slot--up .hand-unit { animation: thumb-glow .78s ease both; }
 .hand-graphic--miss .hand-slot { animation: hand-sink .4s ease both; }
 .hand-graphic--lost .hand-slot--used { filter: grayscale(.35); }
-.hand-graphic--lost .hand-slot--used .hand-unit__bandage { animation: bandage-pop .35s ease both; }
+.hand-graphic--lost .hand-slot--used .hand-unit { animation: bandage-pop .35s ease both; }
 .hand-graphic--compact { width: 145px; }
 .hand-statebar { min-height: 18px; display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--muted); white-space: nowrap; }
 .hand-statebar small { color: var(--dim); font-size: .52rem; font-weight: 850; }
