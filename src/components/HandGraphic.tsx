@@ -8,6 +8,8 @@ interface HandGraphicProps {
   state?: HandState;
   label?: string;
   compact?: boolean;
+  interactive?: boolean;
+  onThumbToggle?: (thumbs: number) => void;
 }
 
 function HandUnit({ raised, mirror, state }: { raised: boolean; mirror: boolean; state: HandState }) {
@@ -26,14 +28,32 @@ function HandUnit({ raised, mirror, state }: { raised: boolean; mirror: boolean;
   );
 }
 
-export function HandGraphic({ thumbs, side, state = "idle", label, compact = false }: HandGraphicProps) {
+export function HandGraphic({ thumbs, side, state = "idle", label, compact = false, interactive = false, onThumbToggle }: HandGraphicProps) {
   const safeThumbs = Math.max(0, Math.min(2, Math.floor(thumbs)));
   const accessibleLabel = label ?? `${side === "p1" ? "プレイヤー" : "対戦相手"}の手。出している親指は${safeThumbs}本`;
+  const toggleThumb = (index: number) => {
+    if (!onThumbToggle) return;
+    const next = index === 0 ? (safeThumbs >= 1 ? safeThumbs - 1 : 1) : (safeThumbs >= 2 ? 1 : 2);
+    onThumbToggle(next);
+  };
+
   return (
-    <div className={`hand-graphic hand-graphic--${side} hand-graphic--${state} ${compact ? "hand-graphic--compact" : ""}`} role="img" aria-label={accessibleLabel}>
-      <HandUnit raised={safeThumbs >= 1} mirror={side === "p2"} state={state} />
-      <HandUnit raised={safeThumbs >= 2} mirror={side === "p1"} state={state} />
-      <span className="hand-graphic__count" aria-hidden="true">{safeThumbs}</span>
+    <div className={`hand-graphic hand-graphic--${side} hand-graphic--${state} ${interactive ? "hand-graphic--interactive" : ""} ${compact ? "hand-graphic--compact" : ""}`} role={interactive ? undefined : "img"} aria-label={accessibleLabel}>
+      {interactive ? (
+        <>
+          <button type="button" className="hand-hit-area" onClick={() => toggleThumb(0)} aria-label={`${side === "p1" ? "あなた" : "相手"}の左手を${safeThumbs >= 1 ? "下げる" : "上げる"}`}>
+            <HandUnit raised={safeThumbs >= 1} mirror={side === "p2"} state={state} />
+          </button>
+          <button type="button" className="hand-hit-area" onClick={() => toggleThumb(1)} aria-label={`${side === "p1" ? "あなた" : "相手"}の右手を${safeThumbs >= 2 ? "下げる" : "上げる"}`}>
+            <HandUnit raised={safeThumbs >= 2} mirror={side === "p1"} state={state} />
+          </button>
+        </>
+      ) : (
+        <>
+          <HandUnit raised={safeThumbs >= 1} mirror={side === "p2"} state={state} />
+          <HandUnit raised={safeThumbs >= 2} mirror={side === "p1"} state={state} />
+        </>
+      )}
     </div>
   );
 }

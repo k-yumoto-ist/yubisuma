@@ -387,21 +387,24 @@ function renderReset({ navigate, resetData }: { navigate: () => void; resetData:
 function renderMatch({ match, opponent, presentation, navigate, openSettings, onCallSelected, onHandSelected, dispatchMatch, startCpuMatch, startLocalMatch, onNextArena }: { match: MatchState; opponent: ReturnType<typeof getCharacter>; presentation: Presentation; navigate: (screen: Screen) => void; openSettings: () => void; onCallSelected: (value: number) => void; onHandSelected: (value: number) => void; dispatchMatch: (action: MatchAction) => void; startCpuMatch: (mode: "quick" | "arena" | "tutorial", opponentId: CharacterId, index?: number) => void; startLocalMatch: () => void; onNextArena: () => void }) {
   const result = match.resolution;
   const reveal = match.phase === "reveal" || match.phase === "judging" || match.phase === "roundResult" || match.phase === "matchResult";
-  const playerShown = reveal ? match.hands.p1 ?? 0 : match.mode === "local" ? match.phase === "localChoosingHands" && match.turn === "p1" ? match.hands.p1 ?? 0 : 0 : match.hands.p1 ?? 0;
-  const cpuShown = reveal ? match.hands.p2 ?? 0 : match.mode === "local" ? match.phase === "localChoosingHands" && match.turn === "p2" ? match.hands.p2 ?? 0 : 0 : 0;
+  const selectingSide: PlayerId | null = match.phase === "playerChoosingHands" || match.phase === "playerResponding" ? "p1" : match.phase === "localChoosingHands" ? match.turn : match.phase === "localResponding" ? match.turn === "p1" ? "p2" : "p1" : null;
+  const playerShown = reveal ? match.hands.p1 ?? 0 : match.mode === "local" ? selectingSide === "p1" ? match.hands.p1 ?? 0 : 0 : match.hands.p1 ?? 0;
+  const cpuShown = reveal ? match.hands.p2 ?? 0 : match.mode === "local" ? selectingSide === "p2" ? match.hands.p2 ?? 0 : 0 : 0;
   const playerHandState = match.phase === "reveal" ? "revealing" : reveal ? result?.thumbLostBy === "p1" ? "lost" : result?.success ? "success" : "miss" : match.hands.p1 !== null ? "selected" : "idle";
   const cpuHandState = match.phase === "reveal" ? "revealing" : reveal ? result?.thumbLostBy === "p2" ? "lost" : result?.success ? "success" : "miss" : "idle";
-  const caller = match.players[match.turn];
-  const responder = match.players[match.turn === "p1" ? "p2" : "p1"];
-  const selectableCalls = match.phase === "playerChoosingCall" ? legalCallValues(caller.thumbs, responder.thumbs) : [];
-  const selectingSide: PlayerId | null = match.phase === "playerChoosingHands" || match.phase === "playerResponding" ? "p1" : match.phase === "localChoosingHands" ? match.turn : match.phase === "localResponding" ? match.turn === "p1" ? "p2" : "p1" : null;
+  const selectableCalls = match.phase === "playerChoosingCall" ? legalCallValues(match.players[match.turn].thumbs, match.players[match.turn === "p1" ? "p2" : "p1"].thumbs) : [];
   const selectableHands = selectingSide ? legalHandValues(match.players[selectingSide].thumbs) : [];
+  const handChoiceValue = selectingSide ? match.hands[selectingSide] : null;
   const mood: CharacterMood = match.phase === "matchResult" ? match.winner === "p1" ? "defeat" : "victory" : result?.thumbLostBy === "p2" ? "frustrated" : result?.thumbLostBy === "p1" ? "confident" : match.players.p2.thumbs === 1 ? "pinch" : presentation === "declare" ? "confident" : "normal";
   const quote = match.phase === "matchResult" ? match.winner === "p1" ? opponent.quotes.defeat : opponent.quotes.victory : match.phase === "roundResult" ? result?.thumbLostBy === "p2" ? opponent.quotes.miss : result?.thumbLostBy === "p1" ? opponent.quotes.success : opponent.quotes.miss : match.players.p2.thumbs === 1 ? opponent.quotes.pinch : presentation === "declare" ? opponent.quotes.intro : opponent.quotes.intro;
+  const quoteText = quote.length > 42 ? quote.slice(0, 42) + "…" : quote;
   const isLocalHandoff = match.phase === "handoff";
   const isResult = match.phase === "roundResult" || match.phase === "matchResult";
   const tutorialText = match.mode === "tutorial" ? getTutorialText(match) : null;
-  const stageClass = `match-stage match-stage--${presentation} ${isResult ? "is-result" : ""}`;
+  const stageClass = "match-stage match-stage--" + presentation + (isResult ? " is-result" : "");
+  const actionButtonLabel = match.mode === "local" || match.turn === "p2" ? "いっせーの！" : "指スマ！";
+  const displayName = (player: PlayerId) => player === "p1" && match.mode !== "local" ? "あなた" : match.players[player].name;
+  const activeName = selectingSide ? displayName(selectingSide) : displayName(match.turn);
 
   const continueRound = () => {
     if (match.phase === "roundResult") dispatchMatch({ type: "continue" });
@@ -411,21 +414,117 @@ function renderMatch({ match, opponent, presentation, navigate, openSettings, on
     else startCpuMatch(match.mode, match.opponentId ?? "nagi", match.arenaIndex);
   };
   const exitResult = () => navigate(match.mode === "arena" ? "arena" : match.mode === "local" ? "modeSelect" : "characterSelect");
-  return <div className={stageClass}><div className="duel-grid"><header className="match-topbar"><button className="back-link" onClick={() => navigate("modeSelect")}><span>←</span> EXIT</button><div className="match-brand"><span>指</span><b>ARENA</b></div><div className="match-top-actions"><span className="round-badge">ROUND {String(match.round).padStart(2, "0")}</span><button className="icon-button" onClick={openSettings} aria-label="設定">⚙</button></div></header><section className="opponent-strip"><div className="opponent-copy"><span className="eyebrow">{match.mode === "arena" ? `ARENA / ${String((match.arenaIndex ?? 0) + 1).padStart(2, "0")}` : match.mode === "local" ? "LOCAL DUEL" : "CPU RIVAL"}</span><h1>{match.players.p2.name}</h1><p>{opponent.title}</p><div className="quote-line"><span>“</span>{quote}<span>”</span></div></div><CharacterAvatar character={opponent} mood={mood} size="medium" /></section><section className="duel-board"><div className="board-scanline" aria-hidden="true" /><div className="contestant contestant--opponent"><div className="contestant-tag"><span>OPPONENT</span><ThumbMeter thumbs={match.players.p2.thumbs} accent="opponent" /></div><HandGraphic side="p2" thumbs={cpuShown} state={cpuHandState} label={`${match.players.p2.name}の手`} /><div className="thumb-caption"><b>{match.players.p2.thumbs}</b><span>THUMBS LEFT</span></div></div><div className="center-call"><span className="call-caption">{match.call === null ? "CALL" : match.phase === "playerChoosingCall" ? "CHOOSE A CALL" : "DECLARED"}</span><div className={`call-number ${match.call === null ? "call-number--empty" : ""}`}>{match.call === null ? "?" : match.call}</div><div className="call-total">{reveal && result ? <><span>合計</span><b>{result.total}</b></> : <span>合計を読め</span>}</div></div><div className="contestant contestant--player"><div className="contestant-tag"><span>{match.players.p1.name}</span><ThumbMeter thumbs={match.players.p1.thumbs} accent="player" /></div><HandGraphic side="p1" thumbs={playerShown} state={playerHandState} label={`${match.players.p1.name}の手`} /><div className="thumb-caption"><b>{match.players.p1.thumbs}</b><span>THUMBS LEFT</span></div></div><Particles active={presentation === "success" || presentation === "victory"} variant={presentation === "victory" ? "victory" : "success"} /></section><section className="interaction-deck"><div className="turn-indicator"><span className={match.turn === "p1" ? "is-active" : ""}>{match.players[match.turn].name}の番</span><i /><small>{phaseLabel(match.phase, match)}</small></div>{tutorialText && <div className="tutorial-tip"><span>GUIDE</span>{tutorialText}</div>}{isLocalHandoff ? <div className="handoff-panel"><span className="handoff-icon">⇄</span><div><b>端末を渡してください</b><small>{match.players[match.turn === "p1" ? "p2" : "p1"].name}さんの番です。選択は見えません。</small></div><button className="primary-button" onClick={() => dispatchMatch({ type: "completeHandoff" })}>受け取りました <span>→</span></button></div> : match.phase === "roundResult" ? <ResultPanel match={match} onContinue={continueRound} /> : match.phase === "matchResult" ? <MatchResultPanel match={match} onReplay={replay} onExit={exitResult} onNextArena={onNextArena} /> : <><div className="choice-area">{selectableCalls.length > 0 && <div className="choice-group"><div className="choice-heading"><span>STEP 1</span><b>宣言する数字</b><small>合計を予想</small></div><div className="choice-row choice-row--calls">{selectableCalls.map((value) => <button key={value} className={`number-choice ${match.call === value ? "is-selected" : ""}`} onClick={() => onCallSelected(value)}>{value}</button>)}</div></div>}{selectableHands.length > 0 && <div className="choice-group"><div className="choice-heading"><span>STEP {match.mode === "local" ? "2" : "2"}</span><b>{match.mode === "local" && selectingSide !== match.turn ? `${match.players[selectingSide ?? "p1"].name}の手` : "出す親指"}</b><small>本数を選ぶ</small></div><div className="choice-row">{selectableHands.map((value) => <button key={value} className={`hand-choice ${((selectingSide === "p1" ? match.hands.p1 : match.hands.p2) === value) ? "is-selected" : ""}`} onClick={() => onHandSelected(value)}><span className={`mini-fingers mini-fingers--${value}`}><i /><i /></span><b>{value}</b><small>本</small></button>)}</div></div>}</div>{match.phase === "readyToReveal" && <div className="reveal-cta"><p>手を伏せたまま、タイミングを合わせて。</p><button className="primary-button primary-button--reveal" onClick={() => dispatchMatch({ type: "startCountdown" })}>{match.mode === "local" || match.turn === "p2" ? "いっせーの！" : "指スマ！"}<span>→</span></button></div>}{(match.phase === "countdown" || match.phase === "reveal") && <div className="countdown-copy" aria-live="polite"><b>{presentation === "count1" ? "いっ" : presentation === "count2" ? "せーの" : "指スマ！"}</b><span>手を公開中…</span></div>}</>}</section></div><div className="match-live" aria-live="polite">{liveMessage(match, presentation)}</div></div>;
 
+  return (
+    <div className={stageClass}>
+      <div className="duel-grid">
+        <header className="match-topbar">
+          <button className="match-exit" type="button" onClick={() => navigate("modeSelect")} aria-label="対戦をやめる">
+            <span aria-hidden="true">←</span><b>戻る</b>
+          </button>
+          <div className="match-round"><span>ラウンド</span><strong>{String(match.round).padStart(2, "0")}</strong></div>
+          <button className="icon-button match-settings" type="button" onClick={openSettings} aria-label="設定">⚙</button>
+        </header>
+
+        <main className="match-playfield">
+          <section className="match-cpu" aria-label={match.players.p2.name + "のエリア"}>
+            <div className="cpu-identity">
+              <CharacterAvatar character={opponent} mood={mood} size="medium" />
+              <div className="cpu-copy">
+                <div className="cpu-name-row">
+                  <h1>{match.players.p2.name}</h1>
+                  <span className="match-remaining">残り <b>{match.players.p2.thumbs}</b></span>
+                </div>
+                <span className="cpu-title">{opponent.title}</span>
+                <p className="cpu-bubble">「{quoteText}」</p>
+              </div>
+            </div>
+            <div className="cpu-hand-block">
+              <span className="hand-owner">相手の手</span>
+              <HandGraphic side="p2" thumbs={cpuShown} state={cpuHandState} label={match.players.p2.name + "の手"} interactive={selectingSide === "p2"} onThumbToggle={onHandSelected} />
+            </div>
+          </section>
+
+          <section className="match-focus" aria-label="対戦の焦点">
+            {isLocalHandoff ? (
+              <div className="match-handoff">
+                <span className="handoff-icon" aria-hidden="true">⇄</span>
+                <b>端末を渡してね</b>
+                <small>{match.players[match.turn === "p1" ? "p2" : "p1"].name}さんの番</small>
+                <button className="primary-button" type="button" onClick={() => dispatchMatch({ type: "completeHandoff" })}>準備OK</button>
+              </div>
+            ) : isResult ? (
+              match.phase === "roundResult" ? <ResultPanel match={match} onContinue={continueRound} /> : <MatchResultPanel match={match} onReplay={replay} onExit={exitResult} onNextArena={onNextArena} />
+            ) : match.phase === "countdown" || match.phase === "reveal" ? (
+              <div className="focus-countdown" aria-live="polite">
+                <span>{presentation === "count1" ? "いっ" : presentation === "count2" ? "せーの" : "指スマ！"}</span>
+                <small>手を公開</small>
+              </div>
+            ) : (
+              <>
+                <div className="focus-turn"><i aria-hidden="true" /><b>{match.phase === "cpuChoosingCall" ? match.players.p2.name + "の番" : activeName + "の番"}</b></div>
+                <div className="focus-call">
+                  <span>{match.phase === "playerChoosingCall" ? "合計はいくつ？" : match.phase === "cpuChoosingCall" ? "相手が考え中" : match.turn === "p1" ? "あなたの宣言" : "相手の宣言"}</span>
+                  <strong>{match.call === null ? "—" : match.call}</strong>
+                </div>
+                <p className="focus-prompt">{match.phase === "cpuChoosingCall" ? "読みを組み立て中…" : match.phase === "playerChoosingCall" ? "数字を選ぼう" : selectingSide ? "出す本数を決めよう" : "準備ができたら公開"}</p>
+              </>
+            )}
+          </section>
+
+          <section className="match-player" aria-label={match.players.p1.name + "のエリア"}>
+            <div className="player-bar">
+              <div><strong>{displayName("p1")}</strong>{match.turn === "p1" && <span>あなたの番</span>}</div>
+              <span className="match-remaining">残り <b>{match.players.p1.thumbs}</b></span>
+            </div>
+            <HandGraphic side="p1" thumbs={playerShown} state={playerHandState} label={match.players.p1.name + "の手"} interactive={selectingSide === "p1"} onThumbToggle={onHandSelected} />
+            {selectingSide === "p1" && <span className="hand-hint">手をタップして選ぶ</span>}
+          </section>
+
+          <Particles active={presentation === "success" || presentation === "victory"} variant={presentation === "victory" ? "victory" : "success"} />
+        </main>
+
+        <section className="interaction-deck" aria-label="対戦操作">
+          {tutorialText && <div className="tutorial-bubble">{tutorialText}</div>}
+          {isLocalHandoff || isResult ? null : selectableCalls.length > 0 ? (
+            <div className="decision-panel">
+              <div className="decision-heading"><b>合計を宣言</b><span>選べる数字</span></div>
+              <div className="number-row">{selectableCalls.map((value) => <button type="button" key={value} className="number-choice" onClick={() => onCallSelected(value)}>{value}</button>)}</div>
+            </div>
+          ) : selectableHands.length > 0 ? (
+            <div className="decision-panel decision-panel--hands">
+              <div className="decision-heading"><b>{activeName}の親指</b><span>手をタップしても選べます</span></div>
+              <div className="hand-options">{selectableHands.map((value) => <button type="button" key={value} className={"hand-option " + (handChoiceValue === value ? "is-selected" : "")} onClick={() => onHandSelected(value)}><span className="hand-option__marks" aria-hidden="true">{value === 0 ? "—" : value === 1 ? "↑" : "↑↑"}</span><b>{value}</b><small>本</small></button>)}</div>
+            </div>
+          ) : match.phase === "readyToReveal" ? (
+            <div className="decision-panel decision-panel--ready">
+              <button className="primary-button primary-button--reveal" type="button" onClick={() => dispatchMatch({ type: "startCountdown" })}>{actionButtonLabel}</button>
+            </div>
+          ) : match.phase === "cpuChoosingCall" ? (
+            <div className="waiting-state"><i aria-hidden="true" /><b>相手の番</b><span>宣言を待っています</span></div>
+          ) : match.phase === "countdown" || match.phase === "reveal" ? (
+            <div className="waiting-state waiting-state--active"><i aria-hidden="true" /><b>公開中</b><span>手を合わせています</span></div>
+          ) : (
+            <div className="waiting-state"><i aria-hidden="true" /><b>次の動き</b><span>画面中央を見てください</span></div>
+          )}
+        </section>
+      </div>
+      <div className="match-live" aria-live="polite">{liveMessage(match, presentation)}</div>
+    </div>
+  );
 }
 
 function ResultPanel({ match, onContinue }: { match: MatchState; onContinue: () => void }) {
   const result = match.resolution;
   if (!result) return null;
   const good = result.success && result.thumbLostBy === "p2";
-  return <div className={`result-panel ${good ? "result-panel--good" : result.success ? "result-panel--danger" : "result-panel--miss"}`}><div className="result-word">{result.success ? good ? "SUCCESS" : "HIT" : "MISS"}</div><div className="result-equation"><b>{result.call}</b><span>{result.success ? "=" : "≠"}</span><strong>{result.total}</strong><small>宣言 / 合計</small></div><p>{result.success ? `${result.thumbLostBy === "p1" ? "あなた" : "相手"}の親指が1本減った！` : "宣言は外れた。手番が交代します。"}</p><button className="text-button" onClick={onContinue}>次のラウンドへ <b>→</b></button></div>;
+  return <div className={`result-panel ${good ? "result-panel--good" : result.success ? "result-panel--danger" : "result-panel--miss"}`}><div className="result-word">{result.success ? "一致！" : "はずれ"}</div><div className="result-equation" aria-label={`宣言${result.call}、合計${result.total}`}><b>{result.call}</b><span>{result.success ? "=" : "≠"}</span><strong>{result.total}</strong></div><p>{result.success ? `${result.thumbLostBy === "p1" ? "あなた" : "相手"}の親指が1本減った！` : "宣言は外れた。手番が交代します。"}</p><button className="text-button" onClick={onContinue}>次のラウンドへ <b>→</b></button></div>;
 }
 
 function MatchResultPanel({ match, onReplay, onExit, onNextArena }: { match: MatchState; onReplay: () => void; onExit: () => void; onNextArena: () => void }) {
   const won = match.winner === "p1";
   const arenaFinal = match.mode === "arena" && (match.arenaIndex ?? 0) === characters.length - 1 && won;
-  return <div className={`match-result ${won ? "match-result--win" : "match-result--loss"}`}><span className="result-kicker">{won ? "ARENA CLEAR" : "TRY AGAIN"}</span><div className="match-result__title">{won ? "勝利！" : "敗北"}</div><p>{won ? match.players.p1.name : match.players.p2.name}が先に親指を0本にしました。</p><div className="final-score"><span>{match.players.p1.thumbs}<small>YOU</small></span><i>—</i><span>{match.players.p2.thumbs}<small>{match.players.p2.name}</small></span></div><div className="result-actions">{match.mode === "arena" && won && !arenaFinal ? <button className="primary-button" onClick={onNextArena}>次の対戦へ <span>→</span></button> : arenaFinal ? <button className="primary-button" onClick={onExit}>アリーナ制覇 <span>★</span></button> : <button className="primary-button" onClick={onReplay}>もう一度 <span>↻</span></button>}<button className="ghost-button" onClick={onExit}>{match.mode === "arena" ? "アリーナへ戻る" : "メニューへ戻る"}</button></div></div>;
+  return <div className={`match-result ${won ? "match-result--win" : "match-result--loss"}`}><span className="result-kicker">{won ? "勝負あり" : "もう一戦"}</span><div className="match-result__title">{won ? "勝利！" : "敗北"}</div><p>{won ? match.players.p1.name : match.players.p2.name}が先に親指を0本にしました。</p><div className="final-score"><span>{match.players.p1.thumbs}<small>{match.players.p1.name}</small></span><i>—</i><span>{match.players.p2.thumbs}<small>{match.players.p2.name}</small></span></div><div className="result-actions">{match.mode === "arena" && won && !arenaFinal ? <button className="primary-button" onClick={onNextArena}>次の対戦へ <span>→</span></button> : arenaFinal ? <button className="primary-button" onClick={onExit}>アリーナ制覇 <span>★</span></button> : <button className="primary-button" onClick={onReplay}>もう一度 <span>↻</span></button>}<button className="ghost-button" onClick={onExit}>{match.mode === "arena" ? "アリーナへ戻る" : "メニューへ戻る"}</button></div></div>;
 }
 
 function ScreenTop({ title, subtitle, back, openSettings }: { title: string; subtitle: string; back: () => void; openSettings?: () => void }) {
@@ -437,8 +536,6 @@ function SettingToggle({ label, description, checked, onChange }: { label: strin
 }
 
 function Metric({ label, value }: { label: string; value: string }) { return <div className="metric"><span>{label}</span><b>{value}</b></div>; }
-
-function ThumbMeter({ thumbs, accent }: { thumbs: number; accent: "player" | "opponent" }) { return <span className={`thumb-meter thumb-meter--${accent}`} aria-label={`残り${thumbs}本`}>{[0, 1].map((index) => <i key={index} className={index < thumbs ? "is-full" : ""} />)}</span>; }
 
 function phaseLabel(phase: MatchPhase, match: MatchState): string {
   if (phase === "playerChoosingCall") return `${match.players[match.turn].name}が数字を宣言`;
@@ -461,10 +558,10 @@ function liveMessage(match: MatchState, presentation: Presentation): string {
 }
 
 function getTutorialText(match: MatchState): string {
-  if (match.history.length === 0 && match.phase === "playerChoosingCall") return "まずは、合計だと思う数字を宣言してみよう。";
-  if (match.history.length === 0 && match.phase === "playerChoosingHands") return "次に、自分が出す親指の本数を選ぶよ。";
-  if (match.phase === "readyToReveal" || match.phase === "countdown" || match.phase === "reveal") return "「指スマ！」で公開。宣言と合計が同じなら成功！";
-  if (match.phase === "roundResult" && match.resolution?.success) return "成功すると、宣言した側の親指が1本減るよ。";
-  if (match.phase === "matchResult") return "先に親指が0本になったら勝利。おつかれさま！";
-  return "外れたら手番が交代。もう一度、数字を読もう。";
+  if (match.history.length === 0 && match.phase === "playerChoosingCall") return "合計だと思う数字を選ぼう";
+  if (match.history.length === 0 && match.phase === "playerChoosingHands") return "上げる親指をタップ";
+  if (match.phase === "readyToReveal" || match.phase === "countdown" || match.phase === "reveal") return "準備ができたら指スマ！";
+  if (match.phase === "roundResult" && match.resolution?.success) return "成功すると親指が1本減るよ";
+  if (match.phase === "matchResult") return "先に親指0本で勝ち";
+  return "外れたら手番が交代";
 }

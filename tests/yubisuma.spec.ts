@@ -24,7 +24,9 @@ test("quick mode reaches the arena screen", async ({ page }) => {
   await page.getByRole("button", { name: /クイック対戦/ }).click();
   await expect(page.getByText("RIVAL SELECT")).toBeVisible();
   await page.getByRole("button", { name: /この相手と対戦/ }).click();
-  await expect(page.getByText(/CPU RIVAL/)).toBeVisible();
+  await expect(page.locator(".match-stage")).toBeVisible();
+  await expect(page.locator(".match-focus .focus-turn")).toContainText("あなたの番");
+  await expect(page.locator(".match-round strong")).toHaveText("01");
 });
 
 test("arena ladder starts the next battle", async ({ page }) => {
@@ -32,8 +34,8 @@ test("arena ladder starts the next battle", async ({ page }) => {
   await page.getByRole("button", { name: /アリーナモード/ }).click();
   await expect(page.getByText("ARENA LADDER")).toBeVisible();
   await page.getByRole("button", { name: /この階層へ/ }).click();
-  await expect(page.getByText(/ARENA \/ 01/)).toBeVisible();
-  await expect(page.getByText("ROUND 01")).toBeVisible();
+  await expect(page.locator(".match-stage")).toBeVisible();
+  await expect(page.locator(".match-round strong")).toHaveText("01");
 });
 
 test("local mode asks for player names", async ({ page }) => {
@@ -45,10 +47,10 @@ test("local mode asks for player names", async ({ page }) => {
   await page.getByRole("button", { name: /対戦をはじめる/ }).click();
   await page.getByRole("button", { name: "1", exact: true }).first().click();
   await page.getByRole("button", { name: /1\s*本/ }).click();
-  await page.getByRole("button", { name: /受け取りました/ }).click();
+  await page.getByRole("button", { name: /準備OK/ }).click();
   await page.getByRole("button", { name: /1\s*本/ }).click();
   await page.getByRole("button", { name: /いっせーの/ }).click();
-  await expect(page.getByText("ROUND 02")).toBeVisible({ timeout: 6_000 });
+  await expect(page.locator(".match-round strong")).toHaveText("02", { timeout: 6_000 });
 });
 
 test("settings are available from the title", async ({ page }) => {
