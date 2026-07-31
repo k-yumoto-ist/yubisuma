@@ -57,6 +57,16 @@ test("hand art uses completed image assets instead of generated SVG paths", asyn
   await expect(page.locator(".hand-unit")).toHaveCount(4);
   await expect(page.locator('.hand-unit[src*="/assets/hands/fist-"]')).toHaveCount(4);
   await expect(page.locator("svg.hand-unit")).toHaveCount(0);
+  const initialSources = await page.locator(".hand-unit").evaluateAll((images) => images.map((image) => image.getAttribute("src")));
+  expect(initialSources[0]).toBe(initialSources[1]);
+  expect(initialSources[2]).toBe(initialSources[3]);
+  expect(await page.locator(".hand-unit--left.hand-unit--mirror").count()).toBe(2);
+
+  await page.getByRole("button", { name: "2", exact: true }).click();
+  await page.locator(".match-player .hand-hit-area").nth(0).click();
+  const leftRaisedSources = await page.locator(".match-player .hand-unit").evaluateAll((images) => images.map((image) => image.getAttribute("src")));
+  expect(leftRaisedSources[0]).toContain("thumb-up-right.png");
+  expect(leftRaisedSources[1]).toContain("fist-right.png");
 });
 
 test("arena ladder starts the next battle", async ({ page }) => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { countRaisedThumbs, createThumbPairState, getThumbSlotViews, patternForCount, patternForCountWithAvailability, patternLabel, removeThumb, toggleThumbPattern } from "./handVisual";
+import { getHandAssetPath } from "./handAssets";
 
 describe("hand visual state", () => {
   it("maps 0, 1, and 2 to explicit left/right patterns", () => {
@@ -44,5 +45,12 @@ describe("hand visual state", () => {
     expect(patternForCountWithAvailability(2, available)).toEqual({ left: true, right: false });
     expect(patternLabel({ left: true, right: false })).not.toBe("両方");
     expect(toggleThumbPattern({ left: false, right: false }, "right", available)).toEqual({ left: false, right: false });
+  });
+
+  it("uses the same completed basis image for both visual sides", () => {
+    expect(getHandAssetPath("left", "fist")).toBe(getHandAssetPath("right", "fist"));
+    expect(getHandAssetPath("left", "thumb-up")).toBe(getHandAssetPath("right", "thumb-up"));
+    expect(getHandAssetPath("left", "fist")).toContain("fist-right.png");
+    expect(getHandAssetPath("right", "thumb-up")).toContain("thumb-up-right.png");
   });
 });

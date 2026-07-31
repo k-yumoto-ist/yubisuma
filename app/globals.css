@@ -353,6 +353,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .hand-hit-area { width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 0; display: block; border: 0; border-radius: 22px 22px 9px 9px; background: transparent; line-height: 0; cursor: pointer; }
 .hand-hit-area:disabled { cursor: not-allowed; }
 .hand-unit { width: 100%; height: auto; aspect-ratio: 1 / 1; display: block; object-fit: contain; transform-origin: 50% 85%; user-select: none; }
+.hand-unit--mirror { transform: scaleX(-1); }
+.hand-graphic--selected .hand-slot--up .hand-unit--mirror { transform: translateY(-5px) scaleX(-1); }
 .hand-unit--used { opacity: .5; filter: grayscale(.35); }
 .hand-unit--unavailable { opacity: .22; filter: grayscale(.65); }
 .hand-graphic--selected .hand-slot--up { transform: translateY(-5px); }
@@ -363,6 +365,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .hand-graphic--miss .hand-slot { animation: hand-sink .4s ease both; }
 .hand-graphic--lost .hand-slot--used { filter: grayscale(.35); }
 .hand-graphic--lost .hand-slot--used .hand-unit { animation: bandage-pop .35s ease both; }
+.hand-graphic--lost .hand-slot--used .hand-unit--mirror { animation-name: bandage-pop-mirror; }
 .hand-graphic--compact { width: 145px; }
 .hand-statebar { min-height: 18px; display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--muted); white-space: nowrap; }
 .hand-statebar small { color: var(--dim); font-size: .52rem; font-weight: 850; }
@@ -396,6 +399,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 @keyframes hand-sink { from { transform: translateY(0); } to { transform: translateY(7px) rotate(-2deg); opacity: .72; } }
 @keyframes thumb-glow { 0% { filter: drop-shadow(0 0 0 transparent); } 45% { filter: drop-shadow(0 0 10px var(--character-accent)); } 100% { filter: drop-shadow(0 0 0 transparent); } }
 @keyframes bandage-pop { from { opacity: 0; transform: scale(.7) rotate(-8deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes bandage-pop-mirror { from { opacity: 0; transform: scale(.7) scaleX(-1) rotate(8deg); } to { opacity: 1; transform: scaleX(-1) rotate(0); } }
 @keyframes particle-burst { from { opacity: 0; transform: rotate(calc(var(--particle-index) * 20deg)) translateY(-10px) scale(.4); } 20% { opacity: 1; } to { opacity: 0; transform: rotate(calc(var(--particle-index) * 20deg)) translateY(calc(-80px - var(--particle-index) * 2px)) translateX(calc((var(--particle-index) - 9) * 15px)) rotate(240deg); } }
 @keyframes result-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }

@@ -27,7 +27,7 @@ interface HandGraphicProps {
 
 function HandUnit({ slot, state }: { slot: ThumbSlotView; state: HandState }) {
   const pose = slot.selected ? "thumb-up" : "fist";
-  return <Image className={`hand-unit hand-unit--${slot.state} hand-unit--${state}`} src={getHandAssetPath(slot.side, pose)} alt="" width={205} height={248} unoptimized draggable={false} />;
+  return <Image className={`hand-unit hand-unit--${slot.side} hand-unit--${slot.state} hand-unit--${state} ${slot.side === "left" ? "hand-unit--mirror" : ""}`} src={getHandAssetPath(slot.side, pose)} alt="" width={256} height={256} unoptimized draggable={false} />;
 }
 
 function ThumbSlot({
