@@ -1,4 +1,4 @@
-const CACHE = "yubisuma-arena-v3";
+const CACHE = "yubisuma-arena-v4";
 const basePath = new URL(self.location.href).pathname.replace(/\/sw\.js$/, "");
 const appRoot = `${basePath}/`;
 const SHELL = [appRoot, `${basePath}/manifest.webmanifest`, `${basePath}/icon.svg`];
@@ -15,6 +15,21 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  const isDocument = event.request.mode === "navigate" || event.request.destination === "document";
+  if (isDocument) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          void caches.open(CACHE).then((cache) => cache.put(appRoot, copy));
+          return response;
+        })
+        .catch(() => caches.match(appRoot))
+    );
+    return;
+  }
+
   event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
     const copy = response.clone();
     void caches.open(CACHE).then((cache) => cache.put(event.request, copy));

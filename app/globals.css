@@ -18,6 +18,8 @@
 * { box-sizing: border-box; }
 html { background: #0b0d1a; }
 body { margin: 0; min-width: 320px; overflow-x: hidden; overflow-anchor: none; background: #0b0d1a; color: var(--ink); font-family: "Avenir Next", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; }
+html.match-screen-active,
+body.match-screen-active { height: 100%; overflow: hidden; overscroll-behavior: none; }
 button, input { font: inherit; }
 button { border: 0; cursor: pointer; color: inherit; -webkit-tap-highlight-color: transparent; }
 button:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
@@ -501,6 +503,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 
 /* Match arena / mobile-first duel board redesign */
 .game-app--match {
+  position: fixed;
+  inset: 0;
+  width: 100%;
   height: 100vh;
   height: 100dvh;
   min-height: 100vh;

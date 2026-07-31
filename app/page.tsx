@@ -94,9 +94,24 @@ export default function HomePage() {
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      void navigator.serviceWorker.register(`${publicBasePath}/sw.js`).catch(() => undefined);
+      const serviceWorkerUrl = `${publicBasePath}/sw.js?v=20260731-match-board`;
+      void navigator.serviceWorker
+        .register(serviceWorkerUrl, { updateViaCache: "none" })
+        .then((registration) => registration.update())
+        .catch(() => undefined);
     }
   }, []);
+
+  useEffect(() => {
+    const isMatchScreen = screen === "match";
+    document.documentElement.classList.toggle("match-screen-active", isMatchScreen);
+    document.body.classList.toggle("match-screen-active", isMatchScreen);
+
+    return () => {
+      document.documentElement.classList.remove("match-screen-active");
+      document.body.classList.remove("match-screen-active");
+    };
+  }, [screen]);
 
   useEffect(() => {
     return () => {
