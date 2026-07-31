@@ -29,6 +29,27 @@ test("quick mode reaches the arena screen", async ({ page }) => {
   await expect(page.locator(".match-round strong")).toHaveText("01");
 });
 
+test("hand slots show left/right preview without revealing the CPU hand", async ({ page }) => {
+  await page.getByRole("button", { name: /対戦をはじめる/ }).click();
+  await page.getByRole("button", { name: /クイック対戦/ }).click();
+  await page.getByRole("button", { name: /この相手と対戦/ }).click();
+  await expect(page.locator(".match-cpu .hand-statebar")).toContainText("未公開");
+
+  await page.getByRole("button", { name: "2", exact: true }).click();
+  await page.locator(".match-player .hand-hit-area").nth(1).click();
+  await expect(page.locator(".match-player .hand-slot--right")).toHaveClass(/is-raised/);
+  await expect(page.locator(".match-player .hand-slot--left")).not.toHaveClass(/is-raised/);
+  await expect(page.locator(".hand-option").nth(1)).toHaveClass(/is-selected/);
+  await expect(page.locator(".match-cpu .hand-statebar")).toContainText("未公開");
+
+  await page.locator(".match-player .hand-hit-area").nth(0).click();
+  await expect(page.locator(".match-player .hand-slot--left")).toHaveClass(/is-raised/);
+  await expect(page.locator(".match-player .hand-slot--right")).toHaveClass(/is-raised/);
+  await expect(page.locator(".hand-option").nth(2)).toHaveClass(/is-selected/);
+  await page.locator(".hand-option").nth(2).click();
+  await expect(page.getByRole("button", { name: /指スマ！/ })).toBeVisible();
+});
+
 test("arena ladder starts the next battle", async ({ page }) => {
   await page.getByRole("button", { name: /対戦をはじめる/ }).click();
   await page.getByRole("button", { name: /アリーナモード/ }).click();

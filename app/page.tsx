@@ -12,6 +12,7 @@ import { nativeRng } from "@/lib/random";
 import { legalCallValues, legalHandValues } from "@/lib/rules";
 import { AudioEngine, vibrate } from "@/lib/sound";
 import { createDefaultProfile, defaultSettings, loadProfile, recordCompletedMatch, saveProfile } from "@/lib/storage";
+import { countRaisedThumbs, patternForCount, type ThumbPattern } from "@/lib/handVisual";
 import type { CharacterId, CharacterMood, GameSettings, MatchPhase, MatchState, PlayerId, PlayerProfile } from "@/lib/types";
 
 type Screen = "boot" | "title" | "modeSelect" | "characterSelect" | "arena" | "nameEntry" | "match" | "stats" | "howto" | "settings" | "reset";
@@ -32,6 +33,7 @@ export default function HomePage() {
   const [settingsReturn, setSettingsReturn] = useState<Screen>("title");
   const [reducedMotion, setReducedMotion] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [thumbPatterns, setThumbPatterns] = useState<Record<PlayerId, ThumbPattern>>({ p1: patternForCount(0), p2: patternForCount(0) });
   const [audio] = useState(() => new AudioEngine(defaultSettings));
   const sequenceKeyRef = useRef<string | null>(null);
   const sequenceTokenRef = useRef(0);
@@ -157,6 +159,7 @@ export default function HomePage() {
       arenaIndex: index
     });
     setMatch(next);
+    setThumbPatterns({ p1: patternForCount(0), p2: patternForCount(0) });
     setPresentation("idle");
     sequenceKeyRef.current = null;
     recordedMatchRef.current = null;
@@ -167,6 +170,7 @@ export default function HomePage() {
   const startLocalMatch = useCallback(() => {
     const next = createMatch({ mode: "local", playerName: playerNames.p1 || "PLAYER 1", playerTwoName: playerNames.p2 || "PLAYER 2" });
     setMatch(next);
+    setThumbPatterns({ p1: patternForCount(0), p2: patternForCount(0) });
     setPresentation("idle");
     sequenceKeyRef.current = null;
     recordedMatchRef.current = null;
@@ -197,6 +201,7 @@ export default function HomePage() {
       const call = isTutorial ? 1 : chooseCpuCall(character, observation, nativeRng);
       const hand = isTutorial ? 0 : chooseCpuHand(character, { ...observation, call }, "caller", nativeRng);
       dispatchMatch({ type: "cpuDeclare", call, hand });
+      setThumbPatterns((current) => ({ ...current, p2: patternForCount(hand) }));
       setPresentation("declare");
       audio.play("declare");
       vibrate(12, profile.settings.vibration);
@@ -289,16 +294,27 @@ export default function HomePage() {
       const observation = { playerThumbs: match.players.p1.thumbs, cpuThumbs: match.players.p2.thumbs, call: value, history: match.history, turnNumber: match.round };
       const cpuHand = match.mode === "tutorial" ? 0 : chooseCpuHand(character, observation, "responder", nativeRng);
       dispatchMatch({ type: "selectCall", value, cpuHand });
+      setThumbPatterns((current) => ({ ...current, p2: patternForCount(cpuHand) }));
     }
     setPresentation("declare");
     audio.play("declare");
     vibrate(10, profile.settings.vibration);
   };
 
-  const onHandSelected = (value: number) => {
+  const onHandSelected = (value: number, pattern?: ThumbPattern) => {
     if (!match) return;
     const side = match.mode === "local" && match.phase === "localResponding" ? (match.turn === "p1" ? "p2" : "p1") : match.mode === "local" ? match.turn : "p1";
+    setThumbPatterns((current) => ({ ...current, [side]: pattern ?? (countRaisedThumbs(current[side]) === value ? current[side] : patternForCount(value)) }));
     dispatchMatch({ type: "selectHand", side, value });
+    audio.unlock();
+    audio.play("select");
+    vibrate(8, profile.settings.vibration);
+  };
+
+  const onHandPatternChanged = (value: number, pattern: ThumbPattern) => {
+    if (!match) return;
+    const side = match.mode === "local" && match.phase === "localResponding" ? (match.turn === "p1" ? "p2" : "p1") : match.mode === "local" ? match.turn : "p1";
+    setThumbPatterns((current) => ({ ...current, [side]: pattern }));
     audio.unlock();
     audio.play("select");
     vibrate(8, profile.settings.vibration);
@@ -341,7 +357,7 @@ export default function HomePage() {
       {screen === "howto" && renderHowTo({ navigate, openSettings })}
       {screen === "settings" && renderSettings({ profile, updateSettings, navigate: () => navigate(settingsReturn), openReset: () => navigate("reset"), startTutorial: () => startCpuMatch("tutorial", "nagi") })}
       {screen === "reset" && renderReset({ navigate: () => navigate("settings"), resetData })}
-      {screen === "match" && match && renderMatch({ match, opponent, presentation, navigate, openSettings: () => openSettings("match"), onCallSelected, onHandSelected, dispatchMatch, startCpuMatch, startLocalMatch, onNextArena: () => { setArenaIndex((current) => Math.min(current + 1, characters.length - 1)); navigate("arena"); } })}
+      {screen === "match" && match && renderMatch({ match, opponent, presentation, thumbPatterns, navigate, openSettings: () => openSettings("match"), onCallSelected, onHandSelected, onHandPatternChanged, dispatchMatch, startCpuMatch, startLocalMatch, onNextArena: () => { setArenaIndex((current) => Math.min(current + 1, characters.length - 1)); navigate("arena"); } })}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );
@@ -399,7 +415,7 @@ function renderReset({ navigate, resetData }: { navigate: () => void; resetData:
   return <div className="screen-shell reset-screen"><div className="reset-sign">!</div><span className="eyebrow">DATA RESET</span><h2>本当に初期化しますか？</h2><p>戦績、称号、チュートリアル完了状態、設定がすべて消えます。この操作は元に戻せません。</p><div className="reset-actions"><button className="ghost-button" onClick={navigate}>キャンセル</button><button className="danger-button" onClick={resetData}>初期化する</button></div></div>;
 }
 
-function renderMatch({ match, opponent, presentation, navigate, openSettings, onCallSelected, onHandSelected, dispatchMatch, startCpuMatch, startLocalMatch, onNextArena }: { match: MatchState; opponent: ReturnType<typeof getCharacter>; presentation: Presentation; navigate: (screen: Screen) => void; openSettings: () => void; onCallSelected: (value: number) => void; onHandSelected: (value: number) => void; dispatchMatch: (action: MatchAction) => void; startCpuMatch: (mode: "quick" | "arena" | "tutorial", opponentId: CharacterId, index?: number) => void; startLocalMatch: () => void; onNextArena: () => void }) {
+function renderMatch({ match, opponent, presentation, thumbPatterns, navigate, openSettings, onCallSelected, onHandSelected, onHandPatternChanged, dispatchMatch, startCpuMatch, startLocalMatch, onNextArena }: { match: MatchState; opponent: ReturnType<typeof getCharacter>; presentation: Presentation; thumbPatterns: Record<PlayerId, ThumbPattern>; navigate: (screen: Screen) => void; openSettings: () => void; onCallSelected: (value: number) => void; onHandSelected: (value: number, pattern?: ThumbPattern) => void; onHandPatternChanged: (value: number, pattern: ThumbPattern) => void; dispatchMatch: (action: MatchAction) => void; startCpuMatch: (mode: "quick" | "arena" | "tutorial", opponentId: CharacterId, index?: number) => void; startLocalMatch: () => void; onNextArena: () => void }) {
   const result = match.resolution;
   const reveal = match.phase === "reveal" || match.phase === "judging" || match.phase === "roundResult" || match.phase === "matchResult";
   const selectingSide: PlayerId | null = match.phase === "playerChoosingHands" || match.phase === "playerResponding" ? "p1" : match.phase === "localChoosingHands" ? match.turn : match.phase === "localResponding" ? match.turn === "p1" ? "p2" : "p1" : null;
@@ -410,11 +426,14 @@ function renderMatch({ match, opponent, presentation, navigate, openSettings, on
   const selectableCalls = match.phase === "playerChoosingCall" ? legalCallValues(match.players[match.turn].thumbs, match.players[match.turn === "p1" ? "p2" : "p1"].thumbs) : [];
   const selectableHands = selectingSide ? legalHandValues(match.players[selectingSide].thumbs) : [];
   const handChoiceValue = selectingSide ? match.hands[selectingSide] : null;
+  const handPreviewValue = selectingSide ? countRaisedThumbs(thumbPatterns[selectingSide]) : null;
   const mood: CharacterMood = match.phase === "matchResult" ? match.winner === "p1" ? "defeat" : "victory" : result?.thumbLostBy === "p2" ? "frustrated" : result?.thumbLostBy === "p1" ? "confident" : match.players.p2.thumbs === 1 ? "pinch" : presentation === "declare" ? "confident" : "normal";
   const quote = match.phase === "matchResult" ? match.winner === "p1" ? opponent.quotes.defeat : opponent.quotes.victory : match.phase === "roundResult" ? result?.thumbLostBy === "p2" ? opponent.quotes.miss : result?.thumbLostBy === "p1" ? opponent.quotes.success : opponent.quotes.miss : match.players.p2.thumbs === 1 ? opponent.quotes.pinch : presentation === "declare" ? opponent.quotes.intro : opponent.quotes.intro;
   const quoteText = quote.length > 42 ? quote.slice(0, 42) + "…" : quote;
   const isLocalHandoff = match.phase === "handoff";
   const isResult = match.phase === "roundResult" || match.phase === "matchResult";
+  const playerLostThumbs = result?.thumbLostBy === "p1" && isResult ? 1 : 0;
+  const cpuLostThumbs = result?.thumbLostBy === "p2" && isResult ? 1 : 0;
   const tutorialText = match.mode === "tutorial" ? getTutorialText(match) : null;
   const stageClass = "match-stage match-stage--" + presentation + (isResult ? " is-result" : "");
   const actionButtonLabel = match.mode === "local" || match.turn === "p2" ? "いっせーの！" : "指スマ！";
@@ -456,7 +475,7 @@ function renderMatch({ match, opponent, presentation, navigate, openSettings, on
             </div>
             <div className="cpu-hand-block">
               <span className="hand-owner">相手の手</span>
-              <HandGraphic side="p2" thumbs={cpuShown} state={cpuHandState} label={match.players.p2.name + "の手"} interactive={selectingSide === "p2"} onThumbToggle={onHandSelected} />
+              <HandGraphic side="p2" thumbs={cpuShown} remainingThumbs={match.players.p2.thumbs} lostThumbs={cpuLostThumbs} masked={!reveal && selectingSide !== "p2"} thumbPattern={thumbPatterns.p2} state={cpuHandState} label={match.players.p2.name + "の手"} interactive={selectingSide === "p2"} onThumbToggle={onHandPatternChanged} />
             </div>
           </section>
 
@@ -492,7 +511,7 @@ function renderMatch({ match, opponent, presentation, navigate, openSettings, on
               <div><strong>{displayName("p1")}</strong>{match.turn === "p1" && <span>あなたの番</span>}</div>
               <span className="match-remaining">残り <b>{match.players.p1.thumbs}</b></span>
             </div>
-            <HandGraphic side="p1" thumbs={playerShown} state={playerHandState} label={match.players.p1.name + "の手"} interactive={selectingSide === "p1"} onThumbToggle={onHandSelected} />
+            <HandGraphic side="p1" thumbs={playerShown} remainingThumbs={match.players.p1.thumbs} lostThumbs={playerLostThumbs} masked={!reveal && (match.mode === "local" ? selectingSide !== "p1" : selectingSide !== "p1" && match.hands.p1 === null)} thumbPattern={thumbPatterns.p1} state={playerHandState} label={match.players.p1.name + "の手"} interactive={selectingSide === "p1"} onThumbToggle={onHandPatternChanged} />
             {selectingSide === "p1" && <span className="hand-hint">手をタップして選ぶ</span>}
           </section>
 
@@ -509,7 +528,7 @@ function renderMatch({ match, opponent, presentation, navigate, openSettings, on
           ) : selectableHands.length > 0 ? (
             <div className="decision-panel decision-panel--hands">
               <div className="decision-heading"><b>{activeName}の親指</b><span>手をタップしても選べます</span></div>
-              <div className="hand-options">{selectableHands.map((value) => <button type="button" key={value} className={"hand-option " + (handChoiceValue === value ? "is-selected" : "")} onClick={() => onHandSelected(value)}><span className="hand-option__marks" aria-hidden="true">{value === 0 ? "—" : value === 1 ? "↑" : "↑↑"}</span><b>{value}</b><small>本</small></button>)}</div>
+              <div className="hand-options">{selectableHands.map((value) => <button type="button" key={value} className={"hand-option " + ((handChoiceValue ?? handPreviewValue) === value ? "is-selected" : "")} onClick={() => onHandSelected(value)}><span className="hand-option__marks" aria-hidden="true">{value === 0 ? "—" : value === 1 ? "↑" : "↑↑"}</span><b>{value}</b><small>本</small></button>)}</div>
             </div>
           ) : match.phase === "readyToReveal" ? (
             <div className="decision-panel decision-panel--ready">
