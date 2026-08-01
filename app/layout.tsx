@@ -10,7 +10,12 @@ export const metadata: Metadata = {
   keywords: ["指スマ", "ブラウザゲーム", "対戦ゲーム", "カジュアルゲーム"],
   manifest: `${publicBasePath}/manifest.webmanifest`,
   icons: {
-    icon: `${publicBasePath}/icon.svg`
+    icon: [
+      { url: `${publicBasePath}/icon.svg`, type: "image/svg+xml" },
+      { url: `${publicBasePath}/favicon-32.png`, sizes: "32x32", type: "image/png" }
+    ],
+    shortcut: `${publicBasePath}/favicon-32.png`,
+    apple: { url: `${publicBasePath}/apple-touch-icon.png`, sizes: "180x180", type: "image/png" }
   }
 };
 
