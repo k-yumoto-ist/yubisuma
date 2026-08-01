@@ -29,6 +29,18 @@ test("quick mode reaches the arena screen", async ({ page }) => {
   await expect(page.locator(".match-round strong")).toHaveText("01");
 });
 
+test("CPU declaration stays hidden until the simultaneous reveal", async ({ page }) => {
+  await page.locator(".primary-button--wide").click();
+  await page.locator(".mode-choice--quick").click();
+  await page.locator(".selection-bottom .primary-button").click();
+  await page.getByRole("button", { name: "4", exact: true }).click();
+  await page.locator(".hand-option").first().click();
+  await page.locator(".primary-button--reveal").click();
+  await page.locator(".result-panel .text-button").click();
+  await expect(page.locator(".hand-option").first()).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator(".focus-call strong")).toHaveText("—");
+});
+
 test("hand slots show left/right preview without revealing the CPU hand", async ({ page }) => {
   await page.getByRole("button", { name: /対戦をはじめる/ }).click();
   await page.getByRole("button", { name: /クイック対戦/ }).click();

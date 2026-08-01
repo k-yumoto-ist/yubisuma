@@ -453,6 +453,7 @@ function renderMatch({ match, opponent, presentation, handStates, navigate, open
   const selectableHands = selectingSide ? legalHandValues(match.players[selectingSide].thumbs) : [];
   const handChoiceValue = selectingSide ? match.hands[selectingSide] : null;
   const handPreviewValue = selectingSide ? countRaisedThumbs(handStates[selectingSide].selectedThumbs) : null;
+  const isHiddenCpuCall = match.mode !== "local" && match.turn === "p2" && match.phase === "playerResponding";
   const mood: CharacterMood = match.phase === "matchResult" ? match.winner === "p1" ? "defeat" : "victory" : result?.thumbLostBy === "p2" ? "frustrated" : result?.thumbLostBy === "p1" ? "confident" : match.players.p2.thumbs === 1 ? "pinch" : presentation === "declare" ? "confident" : "normal";
   const quote = match.phase === "matchResult" ? match.winner === "p1" ? opponent.quotes.defeat : opponent.quotes.victory : match.phase === "roundResult" ? result?.thumbLostBy === "p2" ? opponent.quotes.miss : result?.thumbLostBy === "p1" ? opponent.quotes.success : opponent.quotes.miss : match.players.p2.thumbs === 1 ? opponent.quotes.pinch : presentation === "declare" ? opponent.quotes.intro : opponent.quotes.intro;
   const quoteText = quote.length > 42 ? quote.slice(0, 42) + "…" : quote;
@@ -522,10 +523,10 @@ function renderMatch({ match, opponent, presentation, handStates, navigate, open
               <>
                 <div className="focus-turn"><i aria-hidden="true" /><b>{match.phase === "cpuChoosingCall" ? match.players.p2.name + "の番" : activeName + "の番"}</b></div>
                 <div className="focus-call">
-                  <span>{match.phase === "playerChoosingCall" ? "合計はいくつ？" : match.phase === "cpuChoosingCall" ? "相手が考え中" : match.turn === "p1" ? "あなたの宣言" : "相手の宣言"}</span>
-                  <strong>{match.call === null ? "—" : match.call}</strong>
+                  <span>{match.phase === "playerChoosingCall" ? "合計はいくつ？" : match.phase === "cpuChoosingCall" || isHiddenCpuCall ? "相手が考え中" : match.turn === "p1" ? "あなたの宣言" : "相手の宣言"}</span>
+                  <strong>{match.call === null || isHiddenCpuCall ? "—" : match.call}</strong>
                 </div>
-                <p className="focus-prompt">{match.phase === "cpuChoosingCall" ? "読みを組み立て中…" : match.phase === "playerChoosingCall" ? "数字を選ぼう" : selectingSide ? "出す本数を決めよう" : "準備ができたら公開"}</p>
+                <p className="focus-prompt">{match.phase === "cpuChoosingCall" || isHiddenCpuCall ? "あなたの出す本数だけ決めよう" : match.phase === "playerChoosingCall" ? "数字を選ぼう" : selectingSide ? "出す本数を決めよう" : "準備ができたら公開"}</p>
               </>
             )}
           </section>
